@@ -9,15 +9,22 @@ import (
 	"os/signal"
 	"students-api/internal/config"
 	"students-api/internal/http/handlers/student"
+	"students-api/internal/storage/sqlite"
 	"syscall"
 	"time"
 )
 
 func main() {
 	cfg := config.MustLoad()
+
+	storage, err := sqlite.New(cfg)
+	if err != nil {
+		slog.Error("Failed to create storage", slog.String("error", err.Error()))
+	}
+	slog.Info("Storage Initialized", slog.String("env", cfg.Env), slog.String("version", "1.0.0"))
 	router := http.NewServeMux()
 
-	router.HandleFunc("POST /api/students", student.New())
+	router.HandleFunc("POST /api/students", student.New(storage))
 	server := http.Server{
 		Addr:    cfg.HTTPServer.Address,
 		Handler: router,
